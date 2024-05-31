@@ -7,14 +7,14 @@ CLI client for Khan Bank.
 ### Create new config file
 
 ```sh
-go run . -config clients/config.json -create
+go run . -config config.json -create
 ```
 
 Edit the resulting JSON file, or you can create it with all the necessary fields filled using the following command.
 
 ```sh
 go run . \
-    -config clients/config.json \
+    -config config.json \
     -create \
     -username=<username> \
     -password=<password> \

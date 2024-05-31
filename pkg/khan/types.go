@@ -24,7 +24,7 @@ const (
 type KhanClient struct {
 	DeviceId   string       `json:"deviceId"`
 	UserAgent  string       `json:"userAgent"`
-	UserInfo   UserInfo     `json:"userInfo"`
+	UserInfo   UserInfo     `json:"-"`
 	LoginInfo  LoginInfo    `json:"loginInfo"`
 	HttpClient *http.Client `json:"-"`
 }

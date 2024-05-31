@@ -10,7 +10,7 @@ import (
 )
 
 func main() {
-	config_path := flag.String("config", "clients/config.json", "Config file path")
+	config_path := flag.String("config", "config.json", "Config file path")
 	// used for creating new config file
 	create_new_file := flag.Bool("create", false, "Create blank config file")
 	device_id_flag := flag.String("deviceid", "", "Client UUID (used with -create)")
