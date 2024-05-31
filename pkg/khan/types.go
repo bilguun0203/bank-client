@@ -45,6 +45,12 @@ type UserInfo struct {
 	UniqueID              string `json:"-"`
 }
 
+type ErrorResponse struct {
+	Message string `json:"message,omitempty"`
+	// Code    string `json:"code,omitempty"`
+	// Error   string `json:"error,omitempty"`
+}
+
 type LoginRequest struct {
 	GrantType      string `json:"grant_type"`
 	Username       string `json:"username"`
@@ -163,9 +169,6 @@ type LoginResponse struct {
 	EmailAddress                     string    `json:"email_address,omitempty"`
 	MobileNumber                     string    `json:"mobile_number,omitempty"`
 	CMPhoneNo                        string    `json:"c_m_phone_no,omitempty"`
-	Message                          string    `json:"message,omitempty"`
-	Code                             int       `json:"code,omitempty"`
-	Error                            string    `json:"error,omitempty"`
 }
 
 type StaticCode struct {

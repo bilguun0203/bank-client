@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/json"
+	"fmt"
 	"io"
 	"log"
 	"net/http"
@@ -117,15 +118,21 @@ func (kc *KhanClient) Login(loginType LoginType, otp string) (LoginState, error)
 		return LoginStateNotLoggedIn, err
 	}
 
+	if res.StatusCode != 200 {
+		var errorRes ErrorResponse
+		err = json.Unmarshal(body, &errorRes)
+		if err != nil {
+			log.Println("Failed to parse error response", string(body))
+			return LoginStateNotLoggedIn, err
+		}
+		return LoginStateNotLoggedIn, &utils.BankClientError{Message: errorRes.Message}
+	}
+
 	var loginResponse LoginResponse
 	err = json.Unmarshal(body, &loginResponse)
 	if err != nil {
 		log.Println("Failed to parse response", string(body))
 		return LoginStateNotLoggedIn, err
-	}
-
-	if res.StatusCode != 200 {
-		return LoginStateNotLoggedIn, &utils.BankClientError{Message: loginResponse.Message}
 	}
 
 	kc.UserInfo = UserInfo{
@@ -143,4 +150,56 @@ func (kc *KhanClient) Login(loginType LoginType, otp string) (LoginState, error)
 		return LoginStateLoggedIn, nil
 	}
 	return LoginStateMFARequired, nil
+}
+
+func (kc *KhanClient) Transactions(accountNumber, currency, startDate, endDate string) ([]Transaction, error) {
+	request_url := fmt.Sprintf("https://e.khanbank.com/v1/omni/user/custom/operativeaccounts/%s/transactions?transactionDate={\"lt\":\"%sT00:00:00\",\"gt\":\"%sT23:59:59\"}&transactionCurrency=%s&branchCode=5041",
+		accountNumber, startDate, endDate, currency)
+	request_method := "GET"
+
+	req, err := http.NewRequest(request_method, request_url, nil)
+
+	if err != nil {
+		log.Println("Failed to create request")
+		return nil, err
+	}
+
+	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", kc.UserInfo.AccessToken))
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Add("device-id", kc.DeviceId)
+	if kc.UserAgent != "" {
+		req.Header.Set("User-Agent", kc.UserAgent)
+	}
+
+	res, err := kc.HttpClient.Do(req)
+	if err != nil {
+		log.Println("Failed to send request")
+		return nil, err
+	}
+	defer res.Body.Close()
+
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		log.Println("Failed to read response")
+		return nil, err
+	}
+
+	if res.StatusCode != 200 {
+		var errorRes ErrorResponse
+		err = json.Unmarshal(body, &errorRes)
+		if err != nil {
+			log.Println("Failed to parse error response", string(body))
+			return nil, err
+		}
+		return nil, &utils.BankClientError{Message: errorRes.Message}
+	}
+
+	var transactions []Transaction
+	err = json.Unmarshal(body, &transactions)
+	if err != nil {
+		log.Println("Failed to parse response", string(body))
+		return nil, err
+	}
+
+	return transactions, nil
 }
