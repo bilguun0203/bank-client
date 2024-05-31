@@ -8,18 +8,18 @@ import (
 type LoginState int
 
 const (
-	NotLoggedIn LoginState = iota
-	LoggedIn
-	MFARequired
+	LoginStateNotLoggedIn LoginState = iota
+	LoginStateLoggedIn
+	LoginStateMFARequired
 )
 
-type ClientError struct {
-	Message string
-}
+type LoginType int
 
-func (m *ClientError) Error() string {
-	return m.Message
-}
+const (
+	LoginTypeInitial LoginType = iota
+	LoginTypeSecond
+	LoginTypeFinal
+)
 
 type KhanClient struct {
 	DeviceId   string       `json:"deviceId"`
@@ -35,14 +35,14 @@ type LoginInfo struct {
 }
 
 type UserInfo struct {
-	AccessToken           string    `json:"access_token,omitempty"`
-	AccessTokenExpiresIn  string    `json:"access_token_expires_in,omitempty"`
-	RefreshToken          string    `json:"refresh_token,omitempty"`
-	RefreshTokenStatus    string    `json:"refresh_token_status,omitempty"`
-	RefreshTokenExpiresIn string    `json:"refresh_token_expires_in,omitempty"`
-	DisplayName           string    `json:"display_name,omitempty"`
-	PrimaryAccountID      string    `json:"primary_account_id,omitempty"`
-	UniqueID              string    `json:"-"`
+	AccessToken           string `json:"access_token,omitempty"`
+	AccessTokenExpiresIn  string `json:"access_token_expires_in,omitempty"`
+	RefreshToken          string `json:"refresh_token,omitempty"`
+	RefreshTokenStatus    string `json:"refresh_token_status,omitempty"`
+	RefreshTokenExpiresIn string `json:"refresh_token_expires_in,omitempty"`
+	DisplayName           string `json:"display_name,omitempty"`
+	PrimaryAccountID      string `json:"primary_account_id,omitempty"`
+	UniqueID              string `json:"-"`
 }
 
 type LoginRequest struct {
@@ -158,7 +158,6 @@ type LoginResponse struct {
 	SegmentCode                      string    `json:"segment_code,omitempty"`
 	SecondaryAuthenticationMode      string    `json:"secondary_authentication_mode,omitempty"`
 	UserApplicableSecondaryAuthModes string    `json:"user_applicable_secondary_auth_modes,omitempty"`
-	SecurityQuestion                 []string  `json:"security_question,omitempty"`
 	UserType                         string    `json:"user_type,omitempty"`
 	CorporateID                      string    `json:"corporate_id,omitempty"`
 	EmailAddress                     string    `json:"email_address,omitempty"`

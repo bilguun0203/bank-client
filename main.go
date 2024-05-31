@@ -1,67 +1,46 @@
 package main
 
 import (
-	"encoding/json"
 	"flag"
 	"log"
 	"os"
 
-	khan "github.com/bilguun0203/bank-account-checker/pkg/khan"
-	"github.com/google/uuid"
+	"github.com/bilguun0203/bank-client/cmd"
+	"github.com/bilguun0203/bank-client/pkg/khan"
 )
 
 func main() {
-	client_config_path := flag.String("config", "config.json", "Config file path")
+	config_path := flag.String("config", "clients/config.json", "Config file path")
+	device_id_flag := flag.String("deviceid", "", "Client UUID (used with -create)")
+	user_agent_flag := flag.String("useragent", "", "User agent for the client (used with -create)")
+	username_flag := flag.String("username", "", "Login username (used with -create)")
+	password_flag := flag.String("password", "", "Login password (used with -create)")
 	create_new_file := flag.Bool("create", false, "Create blank config file")
+	login_flag := flag.Bool("login", false, "Interactive login")
 	flag.Parse()
 
 	if *create_new_file {
-		blank_config, err := json.MarshalIndent(khan.KhanClient{
-			DeviceId: uuid.NewString(),
-			LoginInfo: khan.LoginInfo{
-				Username: "username",
-				Password: "base64_encoded_password",
-			},
-		}, "", "  ")
+		err := cmd.CreateBlankConfig(*config_path, *device_id_flag, *user_agent_flag, *username_flag, *password_flag)
 		if err != nil {
-			log.Fatal("Failed to initialize blank config")
+			log.Fatal(err)
 		}
-		err = os.WriteFile(*client_config_path, blank_config, 0600)
-		if err != nil {
-			log.Fatal("Failed to save blank config")
-		}
-		log.Printf("Successfully saved blank config to %s\n", *client_config_path)
+		log.Printf("Successfully saved blank config to %s\n", *config_path)
 		os.Exit(0)
 	}
 
-	log.Printf("Loading %s\n", *client_config_path)
-	khanClient, err := khan.LoadKhanClient(*client_config_path)
+	log.Printf("Loading %s\n", *config_path)
+	khanClient, err := khan.LoadKhanClient(*config_path)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	state, err := khanClient.Login()
-	if err != nil {
-		log.Fatal(err)
-	}
-	clientState, err := json.MarshalIndent(khanClient, "", " ")
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	err = os.WriteFile(*client_config_path, clientState, 0600)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	switch state {
-	case khan.LoggedIn:
-		log.Println("LoggedIn")
-	case khan.NotLoggedIn:
-		log.Println("NotLoggedIn")
-	case khan.MFARequired:
-		log.Println("MFARequired")
-	default:
-		log.Println("No action!")
+	if *login_flag {
+		cmd.Login(&khanClient)
+		err = khanClient.SaveKhanClient(*config_path)
+		if err != nil {
+			log.Fatal(err)
+		}
+		log.Println("Updated the configuration file.")
+		os.Exit(0)
 	}
 }

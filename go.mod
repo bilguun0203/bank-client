@@ -1,4 +1,4 @@
-module github.com/bilguun0203/bank-account-checker
+module github.com/bilguun0203/bank-client
 
 go 1.22.3
 

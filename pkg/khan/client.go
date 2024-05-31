@@ -8,6 +8,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+
+	"github.com/bilguun0203/bank-client/utils"
 )
 
 func NewKhanClient(deviceId string, userAgent string, loginInfo LoginInfo) KhanClient {
@@ -34,6 +36,19 @@ func LoadKhanClient(name string) (KhanClient, error) {
 	return kc, err
 }
 
+func (kc *KhanClient) SaveKhanClient(name string) error {
+	clientState, err := json.MarshalIndent(kc, "", "  ")
+	if err != nil {
+		return err
+	}
+
+	err = os.WriteFile(name, clientState, 0600)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (kc *KhanClient) initHttpClient() {
 	tlsConfig := &tls.Config{
 		CipherSuites: []uint16{
@@ -48,7 +63,7 @@ func (kc *KhanClient) initHttpClient() {
 	kc.HttpClient = client
 }
 
-func (kc *KhanClient) Login() (LoginState, error) {
+func (kc *KhanClient) Login(loginType LoginType, otp string) (LoginState, error) {
 	request_method := "POST"
 	request_url := "https://e.khanbank.com/v1/cfrm/auth/token"
 	loginRequest := LoginRequest{
@@ -58,16 +73,30 @@ func (kc *KhanClient) Login() (LoginState, error) {
 		ChannelID:  "I",
 		LanguageID: "003",
 	}
+	if otp != "" {
+		loginRequest.Password = otp
+	}
+	if loginType == LoginTypeSecond {
+		loginRequest.IsPrelogin = "N"
+		loginRequest.RequestID = kc.UserInfo.UniqueID
+		loginRequest.SecondaryMode = "SOTP"
+	}
+	if loginType == LoginTypeFinal {
+		loginRequest.IsPrelogin = "N"
+		loginRequest.RequestID = kc.UserInfo.UniqueID
+		loginRequest.SecondaryMode = ""
+		loginRequest.RememberDevice = "Y"
+	}
 	payload, err := json.Marshal(loginRequest)
 	if err != nil {
-		return NotLoggedIn, err
+		return LoginStateNotLoggedIn, err
 	}
 
 	req, err := http.NewRequest(request_method, request_url, bytes.NewBuffer(payload))
 
 	if err != nil {
 		log.Println("Failed to create request")
-		return NotLoggedIn, err
+		return LoginStateNotLoggedIn, err
 	}
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("device-id", kc.DeviceId)
@@ -78,25 +107,25 @@ func (kc *KhanClient) Login() (LoginState, error) {
 	res, err := kc.HttpClient.Do(req)
 	if err != nil {
 		log.Println("Failed to send request")
-		return NotLoggedIn, err
+		return LoginStateNotLoggedIn, err
 	}
 	defer res.Body.Close()
 
 	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		log.Println("Failed to read response")
-		return NotLoggedIn, err
+		return LoginStateNotLoggedIn, err
 	}
 
 	var loginResponse LoginResponse
 	err = json.Unmarshal(body, &loginResponse)
 	if err != nil {
 		log.Println("Failed to parse response", string(body))
-		return NotLoggedIn, err
+		return LoginStateNotLoggedIn, err
 	}
 
 	if res.StatusCode != 200 {
-		return NotLoggedIn, &ClientError{Message: loginResponse.Message}
+		return LoginStateNotLoggedIn, &utils.BankClientError{Message: loginResponse.Message}
 	}
 
 	kc.UserInfo = UserInfo{
@@ -111,7 +140,7 @@ func (kc *KhanClient) Login() (LoginState, error) {
 	}
 
 	if kc.UserInfo.AccessToken != "" {
-		return LoggedIn, nil
+		return LoginStateLoggedIn, nil
 	}
-	return MFARequired, nil
+	return LoginStateMFARequired, nil
 }
