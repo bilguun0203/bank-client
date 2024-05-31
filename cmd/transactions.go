@@ -14,6 +14,17 @@ func DownloadTransactions(kc *khan.KhanClient, savePath, accountNumber, currency
 	if accountNumber == "" || startDate == "" || endDate == "" || currency == "" {
 		return &utils.BankClientError{Message: "Some parameters are empty!"}
 	}
+
+	startDateT, err := time.Parse(time.DateOnly, startDate)
+	if err != nil {
+		return &utils.BankClientError{Message: "Start date does not match the expected format YYYY-MM-DD"}
+	}
+	endDateT, err := time.Parse(time.DateOnly, endDate)
+	if err != nil {
+		return &utils.BankClientError{Message: "End date does not match the expected format YYYY-MM-DD"}
+	}
+	// endDateT = endDateT.Add(24 * time.Hour - 1 * time.Second)
+
 	log.Println("Logging in...")
 	state, err := kc.Login(khan.LoginTypeInitial, "")
 	if err != nil {
@@ -24,8 +35,8 @@ func DownloadTransactions(kc *khan.KhanClient, savePath, accountNumber, currency
 	}
 	time.Sleep(100 * time.Millisecond)
 
-	log.Printf("Getting transactions of '%s' from '%s' to '%s'...\n", accountNumber, startDate, endDate)
-	transactions, err := kc.Transactions(accountNumber, currency, startDate, endDate)
+	log.Printf("Getting transactions of '%s' from '%s' to '%s'...\n", accountNumber, startDateT.Format(time.DateOnly), endDateT.Format(time.DateOnly))
+	transactions, err := kc.Transactions(accountNumber, currency, startDateT, endDateT)
 	if err != nil {
 		return err
 	}

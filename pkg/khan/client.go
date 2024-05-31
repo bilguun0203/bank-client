@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/bilguun0203/bank-client/utils"
 )
@@ -152,9 +153,9 @@ func (kc *KhanClient) Login(loginType LoginType, otp string) (LoginState, error)
 	return LoginStateMFARequired, nil
 }
 
-func (kc *KhanClient) Transactions(accountNumber, currency, startDate, endDate string) ([]Transaction, error) {
-	request_url := fmt.Sprintf("https://e.khanbank.com/v1/omni/user/custom/operativeaccounts/%s/transactions?transactionDate={\"lt\":\"%sT00:00:00\",\"gt\":\"%sT23:59:59\"}&transactionCurrency=%s&branchCode=5041",
-		accountNumber, startDate, endDate, currency)
+func (kc *KhanClient) Transactions(accountNumber, currency string, startDate, endDate time.Time) ([]Transaction, error) {
+	request_url := fmt.Sprintf("https://e.khanbank.com/v1/omni/user/custom/operativeaccounts/%s/transactions?transactionDate={\"lt\":\"%s\",\"gt\":\"%s\"}&transactionCurrency=%s&branchCode=5041",
+		accountNumber, startDate.Format("2006-01-02T15:04:05"), endDate.Format("2006-01-02T15:04:05"), currency)
 	request_method := "GET"
 
 	req, err := http.NewRequest(request_method, request_url, nil)
@@ -165,7 +166,6 @@ func (kc *KhanClient) Transactions(accountNumber, currency, startDate, endDate s
 	}
 
 	req.Header.Add("Authorization", fmt.Sprintf("Bearer %s", kc.UserInfo.AccessToken))
-	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("device-id", kc.DeviceId)
 	if kc.UserAgent != "" {
 		req.Header.Set("User-Agent", kc.UserAgent)
