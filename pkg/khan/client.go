@@ -67,7 +67,7 @@ func (kc *KhanClient) initHttpClient() {
 
 func (kc *KhanClient) Login(loginType LoginType, otp string) (LoginState, error) {
 	request_method := "POST"
-	request_url := "https://e.khanbank.com/v1/cfrm/auth/token"
+	request_url := "https://e.khanbank.com/v3/cfrm/auth/token"
 	loginRequest := LoginRequest{
 		Username:   kc.LoginInfo.Username,
 		Password:   kc.LoginInfo.Password,
@@ -154,7 +154,7 @@ func (kc *KhanClient) Login(loginType LoginType, otp string) (LoginState, error)
 }
 
 func (kc *KhanClient) Transactions(accountNumber, currency string, startDate, endDate time.Time) ([]Transaction, error) {
-	request_url := fmt.Sprintf("https://e.khanbank.com/v1/omni/user/custom/operativeaccounts/%s/transactions?transactionDate={\"lt\":\"%s\",\"gt\":\"%s\"}&transactionCurrency=%s&branchCode=5041",
+	request_url := fmt.Sprintf("https://e.khanbank.com/v3/omni/user/custom/operativeaccounts/%s/transactions?transactionDate={\"lt\":\"%s\",\"gt\":\"%s\"}&transactionCurrency=%s&branchCode=5041",
 		accountNumber, startDate.Format("2006-01-02T15:04:05"), endDate.Format("2006-01-02T15:04:05"), currency)
 	request_method := "GET"
 
